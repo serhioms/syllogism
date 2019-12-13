@@ -15,19 +15,21 @@
 package net.ctalkobt;
 
 import java.util.Optional;
-import net.ctalkobt.syllogism.Context;
-import net.ctalkobt.syllogism.Copula;
-import net.ctalkobt.syllogism.Term;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import ca.mss.syllogism.Copula;
+import ca.mss.syllogism.SyllogisticReasoning;
+import ca.mss.syllogism.Term;
 
 /**
  *
  * @author Craig.Taylor
  */
 public class SyllogismTest {
-    private Context context;
+    private SyllogisticReasoning context;;
     private Term mMan;
     private Term mMammel;
     private Term mAnimal;
@@ -38,15 +40,15 @@ public class SyllogismTest {
      */
     @Before
     public void setUp() {
-        context = new Context();
+        context = new SyllogisticReasoning();
 
-        mMan = context.createMeme("Man");
-        mMammel = context.createMeme("Mammel");
-        mAnimal = context.createMeme("Animal");
-        mInanimate = context.createMeme("Inanimate");
+        mMan = context.createTerm("Man");
+        mMammel = context.createTerm("Mammel");
+        mAnimal = context.createTerm("Animal");
+        mInanimate = context.createTerm("Inanimate");
 
-        context.addSyllogism(mMan, Copula.IS, mMammel);
-        context.addSyllogism(mMammel, Copula.IS, mAnimal);
+        context.addSentence(mMan, Copula.IS, mMammel);
+        context.addSentence(mMammel, Copula.IS, mAnimal);
     }
     
     /**
@@ -86,29 +88,29 @@ public class SyllogismTest {
          * Should return false
          */
         Optional<Boolean> result = context.interrogate(mMan, Copula.IS, mInanimate);
-        Assert.assertFalse(result.isPresent());
+        Assert.assertTrue(result.isPresent() && result.get().equals(false));
     }
 
     @Test
     public void testSimpleNotEquivality() {
-        Term mA = context.createMeme("A");
-        Term mB = context.createMeme("B");
+        Term mA = context.createTerm("A");
+        Term mB = context.createTerm("B");
         
-        context.addSyllogism(mA, Copula.ISNOT, mB);
+        context.addSentence(mA, Copula.ISNOT, mB);
         
         Optional<Boolean> result = context.interrogate(mA, Copula.ISNOT, mB);
         Assert.assertTrue(result.isPresent());
-        Assert.assertTrue(result.get().equals(false));
+        Assert.assertTrue(result.get().equals(true));
     }
 
     @Test
     public void testIndirectNonEquivality() {
-        Term mA = context.createMeme("A");
-        Term mB = context.createMeme("B");
-        Term mC = context.createMeme("C");
+        Term mA = context.createTerm("A");
+        Term mB = context.createTerm("B");
+        Term mC = context.createTerm("C");
         
-        context.addSyllogism(mA, Copula.ISNOT, mB);
-        context.addSyllogism(mB, Copula.ISNOT, mC);
+        context.addSentence(mA, Copula.ISNOT, mB);
+        context.addSentence(mB, Copula.ISNOT, mC);
         
         Optional<Boolean> result = context.interrogate(mA, Copula.ISNOT, mC);
         Assert.assertTrue(result.isPresent());
