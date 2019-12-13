@@ -12,7 +12,7 @@ Here are all of them:
 <tr><td>Celarent</td><td>Camestres</td><td>Disamis</td><td>Dimatis</td><tr>
 <tr><td>Darii</td><td>Festino</td><td>Ferison</td><td>Fresison</td><tr>
 <tr><td>Ferio</td><td>Baroco</td><td>Bocardo</td><td>Calemos</td><tr>
-<tr><td>Barbari</td><td>Cesaro</td><td>Felapton</td><td>Fesapo<</td><tr>
+<tr><td>Barbari</td><td>Cesaro</td><td>Felapton</td><td>Fesapo</td><tr>
 <tr><td>Celaront</td><td>Camestros</td><td>Darapti</td><td>Bamalip</td><tr>
 </table>
   
