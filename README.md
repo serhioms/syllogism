@@ -6,13 +6,14 @@ The difference is adding 23 other [Aristotel's assertive syllogisms](https://en.
 
 Here are all of them:
 
-Figure 1	Figure 2	Figure 3	Figure 4<br/>
-Barbara		Cesare		Datisi		Calemes<br/>
-Celarent	Camestres	Disamis		Dimatis<br/>
-Darii		Festino		Ferison		Fresison<br/>
-Ferio		Baroco		Bocardo		Calemos<br/>
-Barbari		Cesaro		Felapton	Fesapo<br/>
-Celaront	Camestros	Darapti		Bamalip<br/>
-
+<table>
+<tr><th>Figure 1</th><th>Figure 2</th><th>Figure 3</th><th>Figure 4</th><tr>
+<tr><td>Barbara</td><td>Cesare</td><td>Datisi</td><td>Calemes</td><tr>
+<tr><td>Celarent</td><td>Camestres</td><td>Disamis</td><td>Dimatis</td><tr>
+<tr><td>Darii</td><td>Festino</td><td>Ferison</td><td>Fresison</td><tr>
+<tr><td>Ferio</td><td>Baroco</td><td>Bocardo</td><td>Calemos</td><tr>
+<tr><td>Barbari</td><td>Cesaro</td><td>Felapton</td><td>Fesapo<</td><tr>
+<tr><td>Celaront</td><td>Camestros</td><td>Darapti</td><td>Bamalip</td><tr>
+</table>
   
 The goal of this project is create of NARS kind of reasoning engine according to [NAL specification](https://github.com/opennars/opennars)...
