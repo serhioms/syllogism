@@ -1,130 +1,152 @@
 package ca.mss.syllogism;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class SyllogisticReasoning {
 
-	private static final Optional<Boolean> FALSE = Optional.of(false);
-	private static final Optional<Boolean> TRUE = Optional.of(true);
-	private static final Optional<Boolean> EMPTY = Optional.empty();
+	private final TrueModuses trueModuses = new TrueModuses(new String[][] {
+			{"aaa", "eae", "aii", "eio", "aai", "eao"},
+			{"eae", "aee", "eio", "aoo", "eao", "aeo"},
+			{"aii", "iai", "eio", "oao", "eao", "aai"},
+			{"aee", "iai", "eio", "aeo", "eao", "aai"}});
 
-	private static final boolean BOOLEAN_FIGURE_3_4 = false;
-	private static final boolean BOOLEAN_FIGURE_1_2 = true;
+	private final KnowledgeBase extensionKb = new KnowledgeBase();
+	private final KnowledgeBase intensionKb = new KnowledgeBase();
 
-	private final List<String> figure1Moduses = Arrays.asList("aaa", "eae", "aii", "eio", "aai", "eao");
-	private final List<String> figure2Moduses = Arrays.asList("eae", "aee", "eio", "aoo", "eao", "aeo");
-	private final List<String> figure3Moduses = Arrays.asList("aii", "iai", "eio", "oao", "eao", "aai");
-	private final List<String> figure4Moduses = Arrays.asList("aee", "iai", "eio", "aeo", "eao", "aai");
-
-	private final TermAssociations associations = new TermAssociations();
-
-	public void addSentence(Term left, Copula copula, Term right) {
-		addSentence(new CategoricalSentence(left, copula, right));
+	public void addProposition(Term left, Copula copula, Term right) {
+		addProposition(createProposition(left, copula, right));
 	}
 
-	public void addSentence(CategoricalSentence sentence) {
-		associations.put(sentence);
+	public void addProposition(Proposition proposition) {
+		extensionKb.put(proposition.predicateTerm, proposition);  
+		intensionKb.put(proposition.subjectTerm, proposition); 
 	}
 
-	public Optional<Boolean> interrogate(Term left, Copula copula, Term right) {
-		return interrogate(new CategoricalSentence(left, copula, right));
+	public Optional<List<Syllogism>> validate(Term subjTerm, Copula copula, Term predTerm) {
+		return validate(createProposition(subjTerm, copula, predTerm));
 	}	
 	
-	public Optional<Boolean> interrogate(CategoricalSentence conclusion) {
+	public Optional<List<Syllogism>> validate(Proposition conclusion) {
 
-		Collection<CategoricalSentence> relations = associations.get(conclusion.left.text);
+		Collection<Proposition> minorPremises = intensionKb.get(conclusion.subjectTerm);
+		if( minorPremises.contains(conclusion) ) {
+			Optional<List<Syllogism>> trivial = Optional.of(new ArrayList<>());
+			trivial.get().add(new Syllogism(conclusion));
+			return trivial;
+		}
+		Optional<List<Syllogism>> result = minorPremises.stream()
+				.map((Proposition minor) -> validateFigure12(conclusion, minor) )
+				.filter((List<Syllogism> r) -> r != null )
+				.findFirst();
+
+		if( result.isPresent() && !result.get().isEmpty() ) {
+			return result;
+		}
 		
-		if (relations == null || relations.isEmpty()) {
-			return EMPTY;
+		minorPremises = extensionKb.get(conclusion.subjectTerm);
+		if( minorPremises.contains(conclusion) ) {
+			Optional<List<Syllogism>> trivial = Optional.of(new ArrayList<>());
+			trivial.get().add(new Syllogism(conclusion));
+			return trivial;
+		}
+		result = minorPremises.stream()
+					.map((Proposition minor) -> validateFigure34(conclusion, minor) )
+					.filter((List<Syllogism> r) -> r != null )
+					.findFirst();
+		
+		return result;
+	}
+	
+	private List<Syllogism> validateFigure12(Proposition conclusion, Proposition minor) {
+		Collection<Proposition> majorPremises = intensionKb.get(minor.predicateTerm);
+		if( !majorPremises.isEmpty() ) {
+			List<Syllogism> result = majorPremises.stream()
+				.filter((Proposition major) -> major.predicateTerm.equals(conclusion.predicateTerm) )
+				.filter((Proposition major) -> trueModuses.contains1(conclusion.modus(major, minor)) )
+				.map((Proposition major) -> new Syllogism(major, minor, conclusion) )
+				.collect(Collectors.toList());
+			if( !result.isEmpty() ) {
+				return result;
+			}
+		}
+		
+		majorPremises = extensionKb.get(minor.predicateTerm);
+		if( !majorPremises.isEmpty() ) {
+			List<Syllogism> result = majorPremises.stream()
+				.filter((Proposition major) -> major.subjectTerm.equals(conclusion.predicateTerm) )
+				.filter((Proposition major) -> trueModuses.contains2(conclusion.modus(major, minor)) )
+				.map((Proposition major) -> new Syllogism(major, minor, conclusion) )
+				.collect(Collectors.toList());
+			if( !result.isEmpty() ) {
+				return result;
+			}
 		}
 
-		Optional<CategoricalSentence> result = relations.stream()
-				.filter((CategoricalSentence minor) -> minor.equals(conclusion) ? true : interrogate(conclusion, minor).get())
-				.findFirst();
-
-		return result.isPresent()? TRUE: FALSE;
+		return null;
 	}
 
-	public Optional<Boolean> interrogate(CategoricalSentence conclusion, CategoricalSentence minor) {
+	private List<Syllogism> validateFigure34(Proposition conclusion, Proposition minor) {
+		List<Syllogism> result = new ArrayList<>();
 
-		boolean whichFigure;
-		Collection<CategoricalSentence> memeRelations;
-
-		if (conclusion.left.equals(minor.left)) {
-			memeRelations = associations.get(minor.right.text);
-			whichFigure = BOOLEAN_FIGURE_1_2;
-		} else if (conclusion.left.equals(minor.right)) {
-			memeRelations = associations.get(minor.left.text);
-			whichFigure = BOOLEAN_FIGURE_3_4;
-		} else {
-			throw new RuntimeException("Unknown figure for: conclusion("+conclusion+") vs minor("+minor+")");
+		Collection<Proposition> majorPremises = intensionKb.get(minor.subjectTerm);
+		if( !majorPremises.isEmpty() ) {
+			if( majorPremises.stream()
+				.filter((Proposition major) -> major.predicateTerm.equals(conclusion.predicateTerm) )
+				.filter((Proposition major) -> trueModuses.contains3(conclusion.modus(major, minor)) )
+				.filter((Proposition major) -> result.add(new Syllogism(major, minor, conclusion)) )
+				.findFirst()
+				.isPresent()) {
+				return result;
+			}
 		}
 
-		if (memeRelations == null || memeRelations.isEmpty()) {
-			return FALSE;
+		majorPremises = extensionKb.get(minor.subjectTerm);
+		if( !majorPremises.isEmpty() ) {
+			if( majorPremises.stream()
+				.filter((Proposition major) -> major.subjectTerm.equals(conclusion.predicateTerm) )
+				.filter((Proposition major) -> trueModuses.contains4(conclusion.modus(major, minor)) )
+				.filter((Proposition major) -> result.add(new Syllogism(major, minor, conclusion)) )
+				.findFirst()
+				.isPresent()) {
+				return result;
+			}
 		}
-
-		Optional<CategoricalSentence> result = memeRelations.stream()
-				.filter((CategoricalSentence major) -> !major.equals(minor))
-				.filter((CategoricalSentence major) -> {
-					String modus = conclusion.modus(major, minor);
-
-					if (whichFigure) {
-						if (major.right.equals(minor.right)) {
-							if( figure2Moduses.contains(modus)) {
-								if( major.left.equals(conclusion.right) ) {
-									conclusion.addPositiveSyllogism(modus, major, minor);
-									return true;
-								}
-							}
-						} else {
-							if( figure1Moduses.contains(modus) ) {
-								if( major.right.equals(conclusion.right) ) {
-									conclusion.addPositiveSyllogism(modus, major, minor);
-									return true;
-								}
-							}
-						}
-					} else {
-						if (major.left.equals(minor.left)) {
-							if( figure3Moduses.contains(modus) ) {
-								if( major.right.equals(conclusion.right) ) {
-									conclusion.addPositiveSyllogism(modus, major, minor);
-									return true;
-								}
-							}
-						} else {
-							if( figure4Moduses.contains(modus) ) {
-								if( major.left.equals(conclusion.right) ) {
-									conclusion.addPositiveSyllogism(modus, major, minor);
-									return true;
-								}
-							}
-						}
-					}
-					conclusion.addNegativeSyllogism(modus, major, minor);
-					return false;
-				}).findFirst();
-
-		return result.isPresent()? TRUE: FALSE;
+		
+		return result;
 	}
 
-	public Term createTerm(String text) {
-		if( associations.isEmpty() ) {
-			return new Term(text.intern());
+	public Term createTerm(String termText) {
+		if( extensionKb.isEmpty() && intensionKb.isEmpty() ) {
+			return new Term(termText.intern());
 		}
-		Collection<CategoricalSentence> relations = associations.get(text);
-		if( relations == null || relations.isEmpty() ) {
-			return new Term(text.intern());
+		Term term = extensionKb.findTerm(termText);
+		if( term != null ) {
+			return term;
 		}
-		@SuppressWarnings("unlikely-arg-type")
-		Optional<Term> result = relations.stream()
-				.map((CategoricalSentence sentense) -> sentense.left.equals(text)? sentense.left: sentense.right)
-				.filter((Term term) -> term.equals(text))
-				.findFirst();
-		return result.isPresent()? result.get(): new Term(text);
+		term = intensionKb.findTerm(termText);
+		if( term != null ) {
+			return term;
+		}
+		return new Term(termText.intern());
 	}
+	
+	public Proposition createProposition(Term subjectTerm, Copula copula, Term predicateTerm) {
+		if( extensionKb.isEmpty() && intensionKb.isEmpty() ) {
+			return new Proposition(subjectTerm, copula, predicateTerm);
+		}
+		Proposition proposition = extensionKb.findProposition(subjectTerm, copula, predicateTerm);
+		if( proposition != null ) {
+			return proposition;
+		}
+		proposition = intensionKb.findProposition(subjectTerm, copula, predicateTerm);
+		if( proposition != null ) {
+			return proposition;
+		}
+		return new Proposition(subjectTerm, copula, predicateTerm);
+	}
+
 }

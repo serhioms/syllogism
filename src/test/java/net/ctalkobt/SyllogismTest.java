@@ -14,6 +14,7 @@
  ***************************************************************************/
 package net.ctalkobt;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.Assert;
@@ -21,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import ca.mss.syllogism.Copula;
+import ca.mss.syllogism.Syllogism;
 import ca.mss.syllogism.SyllogisticReasoning;
 import ca.mss.syllogism.Term;
 
@@ -47,8 +49,8 @@ public class SyllogismTest {
         mAnimal = context.createTerm("Animal");
         mInanimate = context.createTerm("Inanimate");
 
-        context.addSentence(mMan, Copula.IS, mMammel);
-        context.addSentence(mMammel, Copula.IS, mAnimal);
+        context.addProposition(mMan, Copula.IS, mMammel);
+        context.addProposition(mMammel, Copula.IS, mAnimal);
     }
     
     /**
@@ -60,8 +62,8 @@ public class SyllogismTest {
         /**
          * Should return true
          */
-        Optional<Boolean> result = context.interrogate(mMan, Copula.IS, mMammel);
-        Assert.assertTrue(result.isPresent() && result.get().equals(true));
+        Optional<List<Syllogism>> result = context.validate(mMan, Copula.IS, mMammel);
+        Assert.assertTrue(result.isPresent() && !result.get().isEmpty());
     }
     
     /**
@@ -73,8 +75,9 @@ public class SyllogismTest {
         /**
          * Should return true
          */
-        Optional<Boolean> result = context.interrogate(mMan, Copula.IS, mAnimal);
-        Assert.assertTrue(result.isPresent() && result.get().equals(true));
+        Optional<List<Syllogism>> result = context.validate(mMan, Copula.IS, mAnimal);
+        Assert.assertTrue(result.isPresent());
+        Assert.assertTrue(!result.get().isEmpty());
 
     }
 
@@ -87,8 +90,8 @@ public class SyllogismTest {
         /**
          * Should return false
          */
-        Optional<Boolean> result = context.interrogate(mMan, Copula.IS, mInanimate);
-        Assert.assertTrue(result.isPresent() && result.get().equals(false));
+        Optional<List<Syllogism>> result = context.validate(mMan, Copula.IS, mInanimate);
+        Assert.assertTrue(!result.isPresent());
     }
 
     @Test
@@ -96,11 +99,11 @@ public class SyllogismTest {
         Term mA = context.createTerm("A");
         Term mB = context.createTerm("B");
         
-        context.addSentence(mA, Copula.ISNOT, mB);
+        context.addProposition(mA, Copula.ISNOT, mB);
         
-        Optional<Boolean> result = context.interrogate(mA, Copula.ISNOT, mB);
+        Optional<List<Syllogism>> result = context.validate(mA, Copula.ISNOT, mB);
         Assert.assertTrue(result.isPresent());
-        Assert.assertTrue(result.get().equals(true));
+        Assert.assertTrue(!result.get().isEmpty());
     }
 
     @Test
@@ -109,12 +112,11 @@ public class SyllogismTest {
         Term mB = context.createTerm("B");
         Term mC = context.createTerm("C");
         
-        context.addSentence(mA, Copula.ISNOT, mB);
-        context.addSentence(mB, Copula.ISNOT, mC);
+        context.addProposition(mA, Copula.ISNOT, mB);
+        context.addProposition(mB, Copula.ISNOT, mC);
         
-        Optional<Boolean> result = context.interrogate(mA, Copula.ISNOT, mC);
-        Assert.assertTrue(result.isPresent());
-        Assert.assertTrue(result.get().equals(false));
+        Optional<List<Syllogism>> result = context.validate(mA, Copula.ISNOT, mC);
+        Assert.assertTrue(!result.isPresent());
     }
     
 }
